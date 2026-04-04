@@ -1,6 +1,6 @@
 [
 {
   "directory": "d:\\VScode\\auto_cast",
-  "arguments": ["C:\\Program Files\\LLVM\\bin\\clang++.exe", "-c", "-Qunused-arguments", "--target=x86_64-pc-windows-msvc", "-Xclang", "--dependent-lib=windows\\clang_rt.builtins-x86_64.lib", "-fms-runtime-lib=dll_dbg", "-g", "-O0", "-std=c++14", "-fexceptions", "-fcxx-exceptions", "-o", "build\\.objs\\auto_cast_test\\windows\\x64\\debug\\src\\main.cpp.obj", "src\\main.cpp"],
+  "arguments": ["C:\\Program Files\\LLVM\\bin\\clang++.exe", "-c", "-Qunused-arguments", "--target=x86_64-pc-windows-msvc", "-Xclang", "--dependent-lib=windows\\clang_rt.builtins-x86_64.lib", "-fms-runtime-lib=dll_dbg", "-g", "-O0", "-std=c++20", "-fexceptions", "-fcxx-exceptions", "-o", "build\\.objs\\auto_cast_test\\windows\\x64\\debug\\src\\main.cpp.obj", "src\\main.cpp"],
   "file": "src\\main.cpp"
 }]

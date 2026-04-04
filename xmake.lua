@@ -1,5 +1,5 @@
 add_rules("mode.debug", "mode.release")
-set_languages("c99","c++14")
+set_languages("c99","c++20")
 
 target("auto_cast")
     set_kind("static")
