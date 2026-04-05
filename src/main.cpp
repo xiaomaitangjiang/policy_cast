@@ -1,11 +1,20 @@
-#include "../inc/auto_cast.hpp"
-
 #include <cstdint>
-
 #include <iostream>
 
+#include "../inc/policy_cast.hpp"
 
-// Ê¹ÓÃÊ¾Àı
+/**
+ * @file main.cpp
+ * @brief æ¼”ç¤º policy_cast åº“çš„ä¸åŒè½¬æ¢ç­–ç•¥
+ *
+ * æœ¬æ–‡ä»¶å±•ç¤ºäº†å¦‚ä½•ä½¿ç”¨ policy_cast åº“è¿›è¡Œç±»å‹å®‰å…¨è½¬æ¢ï¼Œ
+ * åŒ…æ‹¬é»˜è®¤å®‰å…¨ç­–ç•¥ã€ä¸å®‰å…¨ç­–ç•¥ã€ä¸¥æ ¼ç­–ç•¥å’Œè‡ªå®šä¹‰ç­–ç•¥ã€‚
+ */
+
+/**
+ * @class Base
+ * @brief åŸºç±»ï¼Œå…·æœ‰è™šå‡½æ•°ç”¨äºæ¼”ç¤ºåŠ¨æ€è½¬æ¢
+ */
 class Base
 {
 public:
@@ -13,131 +22,179 @@ public:
   virtual void foo() { std::cout << "Base::foo()\n"; }
 };
 
+/**
+ * @class Derived
+ * @brief æ´¾ç”Ÿç±»ï¼Œé‡å†™åŸºç±»çš„è™šå‡½æ•°
+ */
 class Derived : public Base
 {
 public:
   void foo() override { std::cout << "Derived::foo()\n"; }
 };
 
+/**
+ * @class NonPolymorphicBase
+ * @brief éå¤šæ€åŸºç±»ï¼Œç”¨äºæ¼”ç¤ºéåŠ¨æ€å‘ä¸‹è½¬æ¢
+ */
 class NonPolymorphicBase
 {
 };
 
+/**
+ * @class NonPolymorphicDerived
+ * @brief éå¤šæ€æ´¾ç”Ÿç±»ï¼Œç»§æ‰¿è‡ªéå¤šæ€åŸºç±»
+ */
 class NonPolymorphicDerived : public NonPolymorphicBase
 {
 };
 
-// ×Ô¶¨Òå²ßÂÔ
-struct my_policy
+/**
+ * @struct my_policy
+ * @brief è‡ªå®šä¹‰ç­–ç•¥ï¼Œç»§æ‰¿è‡ªå®‰å…¨ç­–ç•¥åŸºç±»
+ *
+ * è¯¥ç­–ç•¥å…è®¸å»é™¤ const é™å®šç¬¦ï¼Œä½†ç¦æ­¢ reinterpret è½¬æ¢å’Œéå¤šæ€å‘ä¸‹è½¬æ¢ã€‚
+ */
+struct my_policy : policy_cast::cast_policy_base<policy_cast::safe_cast_tag>
 {
-  using tag = safe_cast_tag;
-  static constexpr bool allow_reinterpret = false;               // ½ûÖ¹reinterpret
-  static constexpr bool allow_const_removal = true;              // ÔÊĞíÈ¥const
-  static constexpr bool allow_non_polymorphic_downcast = false;  // ½ûÖ¹·Ç¶àÌ¬ÏòÏÂ×ª»»
-  static constexpr bool allow_standard_pointer_integer_cast = true;
+  static constexpr bool allow_reinterpret =
+      false;  ///< ç¦æ­¢ reinterpret_cast è½¬æ¢
+  static constexpr bool allow_const_removal = true;  ///< å…è®¸å»é™¤ const é™å®šç¬¦
+  static constexpr bool allow_non_polymorphic_downcast =
+      false;  ///< ç¦æ­¢éå¤šæ€å‘ä¸‹è½¬æ¢
+  static constexpr bool allow_standard_pointer_integer_cast =
+      true;  ///< å…è®¸æŒ‡é’ˆä¸æ ‡å‡†æ•´æ•°ç±»å‹ä¹‹é—´çš„è½¬æ¢
+  static constexpr bool allow_user_explicit = true;  ///< å…è®¸æ˜¾å¼ç”¨æˆ·å®šä¹‰è½¬æ¢
 };
 
+/**
+ * @brief æ¼”ç¤ºä¸åŒç­–ç•¥ä¸‹çš„ç±»å‹è½¬æ¢
+ *
+ * è¯¥å‡½æ•°å±•ç¤ºäº† policy_cast åº“çš„å¤šç§ä½¿ç”¨åœºæ™¯ï¼š
+ * 1. é»˜è®¤å®‰å…¨ç­–ç•¥
+ * 2. ä¸å®‰å…¨ç­–ç•¥ï¼ˆå…è®¸æ‰€æœ‰è½¬æ¢ï¼‰
+ * 3. ä¸¥æ ¼ç­–ç•¥ï¼ˆé™åˆ¶æŸäº›è½¬æ¢ï¼‰
+ * 4. éå¤šæ€å‘ä¸‹è½¬æ¢
+ * 5. è¿è¡Œæ—¶å®‰å…¨è½¬æ¢ï¼ˆè¿”å› optionalï¼‰
+ * 6. è‡ªå®šä¹‰ç­–ç•¥
+ */
 void demonstrate_different_policies()
 {
-  std::cout << "=== ÑİÊ¾²»Í¬²ßÂÔµÄauto_cast ===\n";
+  std::cout << "=== æ¼”ç¤ºä¸åŒç­–ç•¥çš„auto_cast ===\n";
 
-  // 1. Ä¬ÈÏ²ßÂÔ£¨°²È«Ä£Ê½£©
-  std::cout << "1. Ä¬ÈÏ²ßÂÔ£¨°²È«Ä£Ê½£©:"<<"\n";
+  /// 1. é»˜è®¤å®‰å…¨ç­–ç•¥ï¼ˆå®‰å…¨æ¨¡å¼ï¼‰
+  std::cout << "1. é»˜è®¤ç­–ç•¥ï¼ˆå®‰å…¨æ¨¡å¼ï¼‰:" << "\n";
 
   int x = 42;
   int* ptr = &x;
-  
 
-  // °²È«Ä£Ê½ÔÊĞíµÄ×ª»»
-  uintptr_t int_ptr1 = auto_cast<uintptr_t>(ptr);  // ±ê×¼×ª»»
-  std::cout << "   ±ê×¼×ª»»: " << int_ptr1 << "\n";
+  // 1.æ ‡å‡†è½¬æ¢:æŒ‡é’ˆ->åœ°å€é•¿åº¦æ•´æ•°
+  uintptr_t int_ptr1 =
+      policy_cast::policy_cast<uintptr_t>(ptr);  // ï¿½ï¿½×¼×ªï¿½ï¿½
+  std::cout << "  æ ‡å‡†è½¬æ¢ ptrçš„åœ°å€: " << int_ptr1 << "\n";
 
-  // °²È«Ä£Ê½½ûÖ¹reinterpret_cast
-  // ÒÔÏÂ´úÂëÔÚ±àÒëÊ±»á±¨´í£º
-  // int* ptr2 = auto_cast<int*>(int_ptr1);  // ´íÎó£º²»ÔÊĞíreinterpret_cast
+  // å®‰å…¨æ¨¡å¼ç¦æ­¢reinterpret_cast
+  // ä»¥ä¸‹ä»£ç åœ¨ç¼–è¯‘æ—¶ä¼šæŠ¥é”™ï¼š
+  // int* ptr2 = policy_cast::policy_cast<int*>(int_ptr1);
+  // é”™è¯¯ï¼šä¸å…è®¸reinterpret_cast
 
-  // 2. ²»°²È«Ä£Ê½
-  std::cout << "\n2. ²»°²È«Ä£Ê½:\n";
+  /// 2. ä¸å®‰å…¨ç­–ç•¥
+  std::cout << "\n2. ä¸å®‰å…¨æ¨¡å¼:\n";
 
-  // Ã÷È·Ê¹ÓÃ²»°²È«Ä£Ê½
-  int* ptr3 = auto_cast<int*, unsafe_policy>(int_ptr1);
-  std::cout << "   reinterpret_castÔÊĞí: ptr3 = " << ptr3 << "\n";
+  // æ˜ç¡®ä½¿ç”¨ä¸å®‰å…¨æ¨¡å¼
+  int* ptr3 =
+      policy_cast::policy_cast<int*, policy_cast::unsafe_policy>(int_ptr1);
+  std::cout << "   reinterpret_castå…è®¸: ptr3= " << ptr3 << "\n ";
 
-  // »òÕßÊ¹ÓÃ±ã½İ±ğÃû
-  int* ptr4 = auto_cast_unsafe<int*>(int_ptr1);
-  std::cout << "   ±ã½İ±ğÃû: ptr4 = " << ptr4 << "\n";
+  // æˆ–è€…ä½¿ç”¨ä¾¿æ·åˆ«å
+  int* ptr4 = policy_cast::policy_cast_unsafe<int*>(int_ptr1);
+  std::cout << "   ä¾¿æ·åˆ«å: ptr4 = " << ptr4 << "\n";
 
-  // 3. ÑÏ¸ñÄ£Ê½
-  std::cout << "\n3. ÑÏ¸ñÄ£Ê½:\n";
+  /// 3. ä¸¥æ ¼ç­–ç•¥
+  std::cout << "\n3. ä¸¥æ ¼æ¨¡å¼:\n";
 
-  int y = 100;
-  // ÑÏ¸ñÄ£Ê½ÔÊĞíµÄ×ª»»
-  std::int16_t int_y = auto_cast<int>(y);  // ÔÊĞí£¬Ã»ÓĞÈ¥const
-  std::cout << "   ±ê×¼×ª»»: " << int_y << "\n";
+  const int y = 100;
+  const int& h=y;
+  // ä¸¥æ ¼æ¨¡å¼å…è®¸çš„è½¬æ¢
+  const std::int16_t int_y =
+      policy_cast::policy_cast_strict<const int>(y);  // å…è®¸ï¼Œæ²¡æœ‰å»const
+  std::cout << "   æ ‡å‡†è½¬æ¢: " << int_y << "\n";
+  std::cout << (!std::is_same_v<const int, const int> &&
+                std::is_same_v<std::remove_cv_t<const int>,
+                               std::remove_cv_t<const int>>)
+            << "\n";
+  // ä¸¥æ ¼æ¨¡å¼ç¦æ­¢çš„è½¬æ¢
+  // ä»¥ä¸‹ä»£ç åœ¨ç¼–è¯‘æ—¶ä¼šæŠ¥é”™ï¼š
 
-  // ÑÏ¸ñÄ£Ê½½ûÖ¹µÄ×ª»»
-  // ÒÔÏÂ´úÂëÔÚ±àÒëÊ±»á±¨´í£º
-  // int& ref_y = auto_cast_strict<int&>(y);  // ´íÎó£º²»ÔÊĞíÈ¥const
+  //int& ref_y = policy_cast::policy_cast_strict<int&>(y);  //
+  //  é”™è¯¯ï¼šä¸å…è®¸å»const
 
-  // 4. ·Ç¶àÌ¬ÏòÏÂ×ª»»
-  std::cout << "\n4. ·Ç¶àÌ¬ÏòÏÂ×ª»»:\n";
+  /// 4. éå¤šæ€å‘ä¸‹è½¬æ¢
+  std::cout << "\n4. ï¿½Ç¶ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½:\n";
 
   NonPolymorphicDerived npd;
   NonPolymorphicBase* npb = &npd;
 
-  // ²»°²È«Ä£Ê½ÔÊĞí
-  NonPolymorphicDerived* npd2 = auto_cast<NonPolymorphicDerived*,unsafe_policy>(npb);
-  std::cout << "   ²»°²È«Ä£Ê½ÔÊĞí·Ç¶àÌ¬ÏòÏÂ×ª»»\n";
-  //°²È«Ä£Ê½ÏÂ²»ÔÊĞí·Ç¶àÌ¬ÏòÏÂ×ª»»,ÒòÎªÕâÒ»ĞĞÎªÒ»°ãÊÇ²»°²È«µÄ
+  // ä¸å®‰å…¨æ¨¡å¼å…è®¸
+  NonPolymorphicDerived* npd2 =
+      policy_cast::policy_cast<NonPolymorphicDerived*,
+                               policy_cast::unsafe_policy>(npb);
+  std::cout << "   ä¸å®‰å…¨æ¨¡å¼å…è®¸éå¤šæ€å‘ä¸‹è½¬æ¢\n";
+  // å®‰å…¨æ¨¡å¼ä¸‹ä¸å…è®¸éå¤šæ€å‘ä¸‹è½¬æ¢,å› ä¸ºè¿™ä¸€è¡Œä¸ºä¸€èˆ¬æ˜¯ä¸å®‰å…¨çš„
 
-  // ÑÏ¸ñÄ£Ê½½ûÖ¹
-  // ÒÔÏÂ´úÂëÔÚ±àÒëÊ±»á±¨´í£º
+  // ä¸¥æ ¼æ¨¡å¼ç¦æ­¢
+  // ä»¥ä¸‹ä»£ç åœ¨ç¼–è¯‘æ—¶ä¼šæŠ¥é”™ï¼š
   // NonPolymorphicDerived* npd3 =
-  //    auto_cast_strict<NonPolymorphicDerived*>(npb);  //
-  //     ´íÎó£º²»ÔÊĞí·Ç¶àÌ¬ÏòÏÂ×ª»»
+  //    policy_cast::policy_cast_strict<NonPolymorphicDerived*>(npb);  //
+  //     é”™è¯¯ï¼šä¸å…è®¸éå¤šæ€å‘ä¸‹è½¬æ¢
 
-  // 5. ÔËĞĞÊ±°²È«°æ±¾
-  std::cout << "\n5. ÔËĞĞÊ±°²È«°æ±¾:\n";
+  // 5. è¿è¡Œæ—¶å®‰å…¨ç‰ˆæœ¬
+  std::cout << "\n5. è¿è¡Œæ—¶å®‰å…¨ç‰ˆæœ¬:\n";
 
   Base* base = new Derived();
 
-  // cpp17¼°ÒÔÉÏ,Ê¹ÓÃtry_auto_cast£¬·µ»Øoptional
-  #if CPP_17
-  if (auto derived = try_auto_cast<Derived*>(base)) {
-    std::cout << "   ×ª»»³É¹¦\n";
+// cpp17ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,Ê¹ï¿½ï¿½try_auto_castï¿½ï¿½ï¿½ï¿½ï¿½ï¿½optional
+#if CPP_17
+  if (auto derived = policy_cast::try_policy_cast_safe<Derived*>(base)) {
+    std::cout << "   è½¬æ¢æˆåŠŸ\n";
     (*derived)->foo();
   }
-  #else
-  if (auto derived = try_auto_cast<Derived*>(base)) {
-    std::cout << "   ×ª»»³É¹¦\n"<<"\n";
+#else
+  if (auto derived = policy_cast::try_policy_cast_safe<Derived*>(base)) {
+    std::cout << "   è½¬æ¢æˆåŠŸ\n" << "\n";
     derived->foo();
   }
 #endif
 
-  // ´íÎóµÄÏòÏÂ×ª»»
+  // auto derived3 = policy_cast::try_policy_cast_safe<Derived&>(*base);
+
+  // é”™è¯¯çš„å‘ä¸‹è½¬æ¢
   Base* base2 = new Base();
-  if (auto derived2 = try_auto_cast<Derived*>(base2)) {
-    std::cout << "   ×ª»»³É¹¦£¨²»Ó¦¸Ã´òÓ¡£©\n";
+  if (auto derived2 = policy_cast::try_policy_cast_safe<Derived*>(base2)) {
+    std::cout << "   è½¬æ¢æˆåŠŸï¼ˆä¸åº”è¯¥æ‰“å°ï¼‰\n";
   }
   else {
-    std::cout << "   ×ª»»Ê§°Ü£¬·µ»Ø¿Õ¶ÔÏó\n";
+    std::cout << "   è½¬æ¢å¤±è´¥ï¼Œè¿”å›ç©ºå¯¹è±¡\n";
   }
 
-  // 6. ²»Í¬²ßÂÔµÄ×éºÏ
-  std::cout << "\n6. ²ßÂÔ×éºÏÊ¾Àı:\n";
-
-  
+  /// 6. è‡ªå®šä¹‰ç­–ç•¥ç¤ºä¾‹
+  std::cout << "\n6. ç­–ç•¥ç»„åˆç¤ºä¾‹:\n";
 
   const int z = 200;
-  int ref_z = auto_cast<int, my_policy>(z);
-  std::cout << "   ×Ô¶¨Òå²ßÂÔ£ºÔÊĞíÈ¥const£¬½ûÖ¹reinterpretºÍ·Ç¶àÌ¬ÏòÏÂ×ª»»:"<<ref_z<<"\n";
+  int ref_z = policy_cast::policy_cast<int, my_policy>(z);
+  std::cout << "   è‡ªå®šä¹‰ç­–ç•¥ï¼šå…è®¸å»constï¼Œç¦æ­¢reinterpretå’Œéå¤šæ€å‘ä¸‹è½¬æ¢:"
+            << ref_z << "\n";
 
   delete base;
   delete base2;
 }
 
+/**
+ * @brief ä¸»å‡½æ•°ï¼Œè¿è¡Œç­–ç•¥æ¼”ç¤º
+ * @return ç¨‹åºé€€å‡ºçŠ¶æ€ç 
+ */
 int main()
 {
+  system("chcp 65001>nul");
   demonstrate_different_policies();
   return 0;
 }
