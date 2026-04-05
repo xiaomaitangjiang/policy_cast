@@ -255,12 +255,6 @@ cl /std:c++14 /Iinclude your_program.cpp
 
 欢迎提交Issue和Pull Request来改进这个库：
 
-1. Fork 本仓库
-2. 创建功能分支 (git checkout -b feature/AmazingFeature)
-3. 提交更改 (git commit -m 'Add some AmazingFeature')
-4. 推送到分支 (git push origin feature/AmazingFeature)
-5. 开启 Pull Request
-
 版本历史
 
 v1.0.0
