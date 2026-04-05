@@ -117,6 +117,9 @@ struct pointer_to_function_tag
 struct function_pointer_to_pointer_tag
 {
 };
+struct integer_to_pointer_tag
+{
+};
 struct member_pointer_tag
 {
 };

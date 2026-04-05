@@ -95,7 +95,7 @@ void demonstrate_different_policies()
   // 安全模式禁止reinterpret_cast
   // 以下代码在编译时会报错：
   // int* ptr2 = policy_cast::policy_cast<int*>(int_ptr1);
-  // //错误：不允许reinterpret_cast
+  // 错误：不允许reinterpret_cast
 
   /// 2. 不安全策略
   std::cout << "\n2. 不安全模式:\n";
@@ -125,7 +125,7 @@ void demonstrate_different_policies()
   // 严格模式禁止的转换
   // 以下代码在编译时会报错：
 
-  // int& ref_y = policy_cast::policy_cast_strict<int&>(y);  //
+  //int& ref_y = policy_cast::policy_cast_strict<int&>(y);  //
   //  错误：不允许去const
 
   /// 4. 非多态向下转换
@@ -148,19 +148,19 @@ void demonstrate_different_policies()
   //     错误：不允许非多态向下转换
 
   // 5. 运行时安全版本
-  std::cout << "\n5. ����ʱ��ȫ�汾:\n";
+  std::cout << "\n5. 运行时安全版本:\n";
 
   Base* base = new Derived();
 
 // cpp17������,ʹ��try_auto_cast������optional
 #if CPP_17
   if (auto derived = policy_cast::try_policy_cast_safe<Derived*>(base)) {
-    std::cout << "   ת���ɹ�\n";
+    std::cout << "   转换成功\n";
     (*derived)->foo();
   }
 #else
   if (auto derived = policy_cast::try_policy_cast_safe<Derived*>(base)) {
-    std::cout << "   ת���ɹ�\n" << "\n";
+    std::cout << "   转换成功\n" << "\n";
     derived->foo();
   }
 #endif
@@ -177,12 +177,12 @@ void demonstrate_different_policies()
   }
 
   /// 6. 自定义策略示例
-  std::cout << "\n6. �������ʾ��:\n";
+  std::cout << "\n6. 策略组合示例:\n";
 
   const int z = 200;
   int ref_z = policy_cast::policy_cast<int, my_policy>(z);
-  std::cout << "   �Զ�����ԣ�����ȥconst����ֹreinterpret�ͷǶ�̬����ת��:" << ref_z
-            << "\n";
+  std::cout << "   自定义策略：允许去const，禁止reinterpret和非多态向下转换:"
+            << ref_z << "\n";
 
   delete base;
   delete base2;

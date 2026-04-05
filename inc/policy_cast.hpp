@@ -11,6 +11,9 @@
 #define CPP_17 __cplusplus >= 201703
 #define CPP_14 __cplusplus >= 201402
 #define CPP_11 __cplusplus >= 201103
+
+#define MACRO_MODE false //是否使用宏代替默认的类型猜测模式
+
 namespace policy_cast {
 
 template <typename From, typename To>
@@ -44,7 +47,7 @@ private:
 
   // 指针类型检查
   static constexpr bool from_is_ptr =
-      util::is_pointer_like_v<raw_from>;
+      util::is_pointer_like_v<std::remove_reference_t<raw_from>>;
   static constexpr bool to_is_ptr =
       util::is_pointer_like_v<std::remove_reference_t<raw_to>>;
   static constexpr bool both_are_ptrs = from_is_ptr && to_is_ptr;
@@ -60,19 +63,24 @@ private:
       both_are_ptrs && std::is_base_of_v<from_ptr_t, to_ptr_t>;
   static constexpr bool is_polymorphic = std::is_polymorphic_v<from_ptr_t>;
 
-  // 指针和整数类型转换检查
+  // 指针->整数类型转换检查
   static constexpr bool is_standard_pointer_integer =
-      (from_is_ptr && type_check::is_standard_int_v<raw_to>) ||
-      (type_check::is_standard_int_v<raw_from> && to_is_ptr);
+      (from_is_ptr && type_check::is_standard_int_v<raw_to>);
+  // ||(type_check::is_standard_int_v<raw_from> && to_is_ptr);
+  // 我认为整数->指针的转换是不安全的非标准行为
 
   static constexpr bool is_generic_pointer_integer =
       (from_is_ptr && std::is_integral_v<raw_to> &&
-       !type_check::is_standard_int_v<raw_to>) ||
-      (std::is_integral_v<raw_from> && to_is_ptr &&
-       !type_check::is_standard_int_v<raw_from>);
-
+       !type_check::is_standard_int_v<raw_to>);
+  //||(std::is_integral_v<raw_from> && to_is_ptr
+  //&&!type_check::is_standard_int_v<raw_from>);
+  // 我认为整数->指针的转换是不安全的非标准行为
   static constexpr bool is_pointer_integer =
       is_standard_pointer_integer || is_generic_pointer_integer;
+
+  // 整数->指针类型转换检查
+  static constexpr bool is_integer_pointer =
+      std::is_integral_v<raw_from> && to_is_ptr;
 
   // 函数指针检查
   static constexpr bool from_is_func_ptr =
@@ -123,7 +131,8 @@ public:
     else if constexpr (is_pointer_integer) {
       return category::pointer_integer_tag{};
     }
-    else if constexpr (both_are_ptrs || from_is_func_ptr || to_is_func_ptr) {
+    else if constexpr (both_are_ptrs || from_is_func_ptr || to_is_func_ptr ||
+                       is_integer_pointer) {
       return category::reinterpret_tag{};
     }
     else if constexpr (is_convertible) {
@@ -207,6 +216,9 @@ public:
       else if constexpr (to_is_func_ptr) {
         return subcategory::pointer_to_function_tag{};
       }
+      else if constexpr (to_is_ptr) {
+        return subcategory::integer_to_pointer_tag{};
+      }
       else if constexpr (std::is_member_pointer_v<raw_from> ||
                          std::is_member_pointer_v<raw_to>) {
         return subcategory::member_pointer_tag{};
@@ -233,6 +245,10 @@ public:
       !std::is_same_v<primary_category, type_category::category::invalid_tag> &&
       !std::is_same_v<secondary_category, struct invalid_subcategory_tag>;
 };
+
+/*
+
+*/
 
 template <typename From, typename To>
 struct conversion_traits
@@ -591,12 +607,48 @@ public:
   }
 };
 
+#if MACRO_MODE == true
+
 template <typename To, typename Policy = default_policy, typename From>
 To policy_cast(From&& from)
 {
-  using remove_ref_from=std::remove_reference_t<From>;
-  return policy_cast_impl<To, remove_ref_from, Policy>::cast(std::forward<From>(from));
+  return policy_cast_impl<To, From, Policy>::cast(std::forward<From>(from));
 }
+
+#define POLICY_CAST(T, From, Policy) \
+  policy_cast<T, Policy, decltype(From)>(From)
+#define POLICY_CAST_SAFE(T, From) \
+  policy_cast<T, default_policy, decltype(From)>(From)
+#define POLICY_CAST_UNSAFE(T, From) \
+  policy_cast<T, unsafe_policy, decltype(From)>(From)
+#define POLICY_CAST_STRICT(T, From) \
+  policy_cast<T, strict_policy, decltype(From)>(From)
+
+#elif MACRO_MODE == false
+
+template <typename To, typename Policy = default_policy, typename From>
+To policy_cast(From&& from)
+{
+  if constexpr (std::is_lvalue_reference_v<To>) {
+    using Guess_From_T = std::remove_reference_t<From>&;
+
+    return policy_cast_impl<To, Guess_From_T, Policy>::cast(
+        std::forward<From>(from));
+  }
+  else if constexpr (std::is_rvalue_reference_v<To>) {
+    using Guess_From_T = std::remove_reference_t<From>&&;
+
+    return policy_cast_impl<To, Guess_From_T, Policy>::cast(
+        std::forward<From>(from));
+  }
+  else {
+    using Guess_From_T = std::remove_reference_t<From>;
+    return policy_cast_impl<To, Guess_From_T, Policy>::cast(
+        std::forward<From>(from));
+  }
+}
+
+#endif
 
 template <typename To, typename From>
 To policy_cast_safe(From&& from)
@@ -616,7 +668,7 @@ To policy_cast_strict(From&& from)
   return policy_cast<To, strict_policy>(std::forward<From>(from));
 }
 
-#if CPP_17
+#if CPP_17&&MACRO_MODE==false
 template <typename To, typename Policy = default_policy, typename From>
 std::optional<To> try_policy_cast(From&& from)
 {
@@ -644,7 +696,7 @@ std::optional<To> try_policy_cast_strict(From&& from)
 {
   return try_policy_cast<To, strict_policy>(std::forward<From>(from));
 }
-#else
+#elif MACRO_MODE == false
 
 template <typename To, typename Policy = default_policy, typename From>
 To* try_policy_cast(From from)
